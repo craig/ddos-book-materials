@@ -1,0 +1,56 @@
+#!/usr/bin/env bpftrace
+
+// Dieses Tool zählt Retransmits von TCP SYN/ACK.
+// @established_after_retransmits ist ein Histogramm, wie viele Retransmits gesendet wurden,
+// bis der TCP-Handshake abgeschlossen war.
+
+#include <linux/tcp.h>
+#include <net/tcp_states.h>
+
+tracepoint:sock:inet_sock_set_state {
+	if (args->protocol != IPPROTO_TCP) {
+		return;
+	}
+
+	if (args->family != AF_INET) {
+		return;
+	}
+
+	if (args->oldstate == TCP_SYN_RECV) {
+		// Handshake abgeschlossen oder abgebrochen
+		$retransmits = @retransmits[ntop(args->saddr), args->sport, ntop(args->daddr), args->dport];
+		delete(@retransmits[ntop(args->saddr), args->sport, ntop(args->daddr), args->dport]);
+
+		if (args->newstate == TCP_ESTABLISHED) {
+			@established_after_retransmits = lhist($retransmits, 0, 10, 1);
+		}
+
+		// Hier müsste man eigentlich Sockets messen können, die nach SYN_RECV in CLOSE übergehen,
+		// weil die maximale Menge an Retransmits vorbei war.
+		// Das hat in Tests aber nicht funktioniert und es scheint auch sonst keinen Hook zu geben,
+		// über den man das Schließen des Sockets erkennen könnte.
+	}
+}
+
+tracepoint:tcp:tcp_retransmit_synack {
+	// Wir benutzen das Tuple (Src/Dst-IP/Port) als Key für die Verbindungen,
+	// weil der Socket-Pointer zwischen diesem Tracepoint und sock:inet_sock_set_state
+	// nicht zusammenpasst und daher nicht verwendet werden kann.
+	@retransmits[ntop(args->saddr), args->sport, ntop(args->daddr), args->dport]++;
+
+	if (@retransmits[ntop(args->saddr), args->sport, ntop(args->daddr), args->dport] > 5) {
+		// Limit ist (standardmäßig) 5, kann also nicht sein -> Messfehler.
+		// (Sockets, die Linux aufgibt, können wir nicht messen (siehe oben wegen CLOSE),
+		// und daher bleibt der Retransmit-Counter erhalten, weil wir bpftrace auch nicht
+		// Werte in Maps expiren können.
+		// Wenn die gleiche Src/Dst-IP/Port-Kombi danach wiederverwendet wird, dann kann der
+		// Counter hier über das Maximum gehen.
+		@retransmits_too_high++;
+		delete(@retransmits[ntop(args->saddr), args->sport, ntop(args->daddr), args->dport]);
+	}
+}
+
+interval:s:10 {
+	print(@established_after_retransmits);
+	print(@retransmits_too_high);
+}
