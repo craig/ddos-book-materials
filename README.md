@@ -10,3 +10,7 @@ Or buy on Amazon if you're lazy: https://www.amazon.de/DDoS-Understanding-Real-L
 ## Corrections
 
 Corrections to the book will also be added here.
+
+## Cover
+
+<img src="https://github.com/craig/ddos-book-materials/cover.jpg" />
