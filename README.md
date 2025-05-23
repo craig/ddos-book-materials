@@ -13,4 +13,4 @@ Corrections to the book will also be added here.
 
 ## Cover
 
-<img src="https://github.com/craig/ddos-book-materials/cover.jpg" />
+<img src="cover.jpg" />
