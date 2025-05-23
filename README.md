@@ -11,6 +11,6 @@ Or buy on Amazon if you're lazy: https://www.amazon.de/DDoS-Understanding-Real-L
 
 Corrections to the book will also be added here.
 
-## Cover
+## Book
 
-<img src="cover.jpg" width="500" />
+<img src="cover.jpg" width="500" /> <img src="back.jpg" width="500" />
