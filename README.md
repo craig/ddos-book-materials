@@ -13,4 +13,4 @@ Corrections to the book will also be added here.
 
 ## Book
 
-<img src="cover.jpg" width="500" /> <img src="back.jpg" width="500" />
+<img src="cover.jpg" width="600" /> <img src="back.jpg" width="600" />
